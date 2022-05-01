@@ -10,6 +10,8 @@ img = io.imread('./test_images/test_image_1.png')
 img = rgb2gray(img)
 
 # Display the image
+fig = plt.figure()
+fig.set_facecolor((0.8,0.8,0.8))
 plt.imshow(img, cmap='gray')
 plt.title("2D Array Representation of the Image in Grayscale")
 plt.xlabel('X')

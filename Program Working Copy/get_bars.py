@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage import io
 from skimage.color import rgb2gray
+from timeit import default_timer as timer
+
+start = timer()
 
 # Load image
 
@@ -54,7 +57,9 @@ horizontalThresh = 100 # The horizontal length of pixels needed to be considered
 
 # Start from middle of the page, trace down from top
 
+horizontalLines = [] # An array of lines represented by arrays of pixel coords
 yIndex = 0 # Start from top
+skipPixels = 3 # The number of pixels to skip in the Y search to avoid counting the same line twice
 
 while (yIndex < yDim):
 
@@ -65,7 +70,6 @@ while (yIndex < yDim):
     
     if (img[yIndex,xIndex] < blackThreshold):
         
-        print(img[yIndex,xIndex])
         
         # Trace horizontally from the pixel left and right, adding traced pixels to an
         # array containing their coordinates if they also pass the blackThreshold. 
@@ -74,35 +78,73 @@ while (yIndex < yDim):
         
         # Right-half loop
         
+        rightHalfPixels = [] # Store the right half
+        
         while xIndex < xDim:
             
-            xIndex +=1
-        
+            if (img[yIndex,xIndex] < blackThreshold):
+                
+                rightHalfPixels.append((yIndex, xIndex))
+                xIndex +=1
+            
+            else:
+                
+                break
+                
         # Left-half loop
         
-        xIndex = xDim//2 # Reset x position
+        leftHalfPixels = [] # Store the left half
+        
+        xIndex = xDim//2 - 1 # Reset x position 1 pixel left of center
         
         while xIndex >= 0:
             
-            xIndex -=1
+            if (img[yIndex,xIndex] < blackThreshold):
+                
+                rightHalfPixels.append((yIndex, xIndex))
+                xIndex -=1
+            
+            else:
+                
+                break
         
+        # Combine the halves
+        
+        for coord in reversed(leftHalfPixels):
+            
+            linePixels.append(coord)
+            
+        for coord in rightHalfPixels:
+            
+            linePixels.append(coord)
+
         # Once it has been traced left and right, check to see if the array size exceeds
         # the horizontalThresh to be considered a horizontal line
         
         if (len(linePixels) > horizontalThresh):
             
-            # If it passes, terminate the loop to keep the line
+            # If it passes, keep the line and skip a few Y pixels down
             
-            yIndex = yDim;
-        
-        # If one was not found, reset the x position and continue main loop
-        
-        else:
-            
-            yIndex += 1;
-            
-    # If nothing is found, continue the main loop
+            horizontalLines.append(linePixels)
+            yIndex += skipPixels
+
+    # Continue loop
     
-    else:
-         
-        yIndex += 1;
+    yIndex += 1;
+
+
+# Add the lines to the test image to see if they line up with the original
+
+for line in horizontalLines:
+    
+    for pixel in line:
+        
+        testImg[pixel] = 0.0
+  
+# Display test image 
+
+plt.imshow(testImg, cmap='gray', vmin=0,vmax=1)
+
+    
+end = timer()
+print(end - start)

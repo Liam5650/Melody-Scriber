@@ -43,6 +43,34 @@ def place_cursor(x,y):
 #Top left of the bottom half of the second bar is at (241,207)
 #Bottom left of the second bar is at (391,245)
 
+'''
+if given the top left and bottom right of the staff then you'll need to 
+subdivide the staff into the seperate lines along which notes will be located
+then you will want to scan across each line for anomalies in a 1 pixel wide 
+range. This depends on the bias of the the image - there must be exclusively 
+whitespace between the lines of the staff except for symbols and notes
+will also have to check above and below the staff
+'''
+
+def getNotes(barCoord):
+    '''
+    Parameters
+    ----------
+    barCoord : 2x2 array
+        The top left and bottom right corner of both staffs of a bar of music
+
+    Returns 1 on full bar, 0 on failure
+    -------
+    scans along all lines of a sheet of music for notes or symbols. When 
+    encountered it identifies that symbol and jumps across it until it detect 
+    another symbol along that line
+
+    '''
+    
+    
+    
+    print(1)
+
 # Display the image
 fig = plt.figure()
 fig.set_facecolor((0.8,0.8,0.8))

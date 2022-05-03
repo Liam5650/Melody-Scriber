@@ -50,9 +50,13 @@ testImg = np.ones((yDim, xDim)) # The white canvas serving as the test image
 plt.imshow(testImg, cmap='gray', vmin=0,vmax=1)
 """
 
-#### FIND HORIZONTAL LINES ####
 
-blackThreshold = 0.2 # The float value threshold in which we evaluate as a line
+
+########## FIND HORIZONTAL LINES ##########
+
+
+
+blackThreshold = 0.4 # The float value threshold in which we evaluate as a line
 horizontalThresh = 100 # The horizontal length of pixels needed to be considered a line
 
 # Start from middle of the page, trace down from top
@@ -101,7 +105,7 @@ while (yIndex < yDim):
             
             if (img[yIndex,xIndex] < blackThreshold):
                 
-                rightHalfPixels.append((yIndex, xIndex))
+                leftHalfPixels.append((yIndex, xIndex))
                 xIndex -=1
             
             else:
@@ -145,6 +149,95 @@ for line in horizontalLines:
 
 plt.imshow(testImg, cmap='gray', vmin=0,vmax=1)
 
+
+
+########## FIND VERTICAL LINES ##########
+
+
+
+# The sheet layout could differ, ie only treble clef, bass clef + treble clef,
+# so we need to try to take this into account by potentially searching multiple
+# horizontal lines to find the bars. The number of bars a found vertical line
+# intersects will be used to determine this and skip horizontal lines in the 
+# searching process that have already been intersected.
+
+verticalLines = [] # An array of lines represented by arrays of pixel coords
+verticalThresh = 75 # The vertical length of pixels needed to be considered a line
+numHorizLines = len(horizontalLines) # The number of horizontal lines to process
+currHorizLineIndex = 0 # The horizontal line to be processed
+skipPixels = 3 # The number of pixels to skip in the X search to avoid counting the same line twice
+
+while (currHorizLineIndex) < numHorizLines:
     
+    xStart = horizontalLines[currHorizLineIndex][0][1] # X position of the start of the first line
+    xEnd = horizontalLines[currHorizLineIndex][-1][1] # X position of the start of the first line
+    yStart = horizontalLines[currHorizLineIndex][0][0] # Y position of the first line
+    xIndex = xStart # Temp variable that can be changed during the loop
+    
+    # Start at first horizontal line. At each pixel, test to see if the pixel below
+    # passes the black threshold. Also check that the Y value is within the bounds
+    
+    while (xIndex <= xEnd):
+        
+        yIndex = yStart # Temp variable that can be changed during the loop
+        linePixels = [] # An array to hold the pixel coords of the line
+        
+        while (img[yIndex,xIndex] < blackThreshold) and (yIndex < yDim):
+            
+            # If it does, store pixel and keep looping down until a line is created
+            
+            linePixels.append((yIndex,xIndex))
+            yIndex+=1
+            
+        # Once it has been traced up to down, check to see if the array size 
+        # exceeds the verticalThresh to be considered a vertical line
+        
+        if (len(linePixels) > verticalThresh):
+            
+            # If it passes, keep the line and skip a few x pixels right
+            
+            verticalLines.append(linePixels)
+            xIndex += skipPixels
+
+        # If it doesn't, start over at the next pixel in the line
+        
+        else:
+        
+            xIndex += 1
+        
+    # After the first line has been fully explored, if there is a vertical line found, 
+    # test to see how many horizontal lines the vertical line passes through.
+    # This will create a bar, and we can ignore doing the horizontal search
+    # through any of the intersected lines
+        
+    # If we have foudn a vertical line, we need to test it
+
+    if (len(linePixels) > 0):
+        
+        # We skip ahead through the Horizontal lines as long as the Y value of the 
+        # found vertical line is greater than that of the horizontal line
+        
+        while (currHorizLineIndex < numHorizLines) and (linePixels[-1][0] >= horizontalLines[currHorizLineIndex][0][0]):
+        
+            currHorizLineIndex += 1
+    
+    # If we didnt find a vertical line, start again at the next horizontal line
+    
+    else:
+        
+        currHorizLineIndex += 1
+
+# Add the lines to the test image to see if they line up with the original
+
+for line in verticalLines:
+    
+    for pixel in line:
+        
+        testImg[pixel] = 0.0
+  
+# Display test image 
+
+plt.imshow(testImg, cmap='gray', vmin=0,vmax=1)
+
 end = timer()
 print(end - start)

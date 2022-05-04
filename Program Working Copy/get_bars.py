@@ -264,7 +264,7 @@ while (vertLineIndex < len(verticalLines)-1):
     # We only need to poll the horizontal lines at an interval of 5 as we can
     # get the rest of the coordinates simply from the vertical line. We must
     # check the Y length of each vertical line to see what set of horizontal
-    # lines pair with them. Skip ahead when the Y value of a vert line exceeds
+    # lines pair with them. Skip ahead when the max Y value of a vert line exceeds
     # the current horizontal line Y value. 
     
     if (verticalLines[vertLineIndex][-1][0] > horizontalLines[horizLineIndex][0][0]):
@@ -309,7 +309,115 @@ while (vertLineIndex < len(verticalLines)-1):
         
         vertLineIndex +=1
 
-print(bars)
+
+
+########## FIND NOTE STEMS ##########
+
+
+
+# Trace through horizontal lines, and trace any through any intersected
+# vertical line up and down. Ignore lines that have already been traversed. 
+
+traversedImg = np.ones((yDim, xDim)) # The white canvas serving as the test image
+
+# Add the traversed vertical lines to the array
+
+for line in verticalLines:
+    
+    for pixel in line:
+        
+        traversedImg[pixel] = 0.0
+
+noteStems = [] # An array of lines represented by arrays of pixel coords
+stemThresh = 22 # The vertical length of pixels needed to be considered a line
+numHorizLines = len(horizontalLines) # The number of horizontal lines to process
+currHorizLineIndex = 0 # The horizontal line to be processed
+skipPixels = 3 # The number of pixels to skip in the X search to avoid counting the same line twice
+
+while (currHorizLineIndex) < numHorizLines:
+    
+    xStart = horizontalLines[currHorizLineIndex][0][1] # X position of the start of the first line
+    xEnd = horizontalLines[currHorizLineIndex][-1][1] # X position of the start of the first line
+    yStart = horizontalLines[currHorizLineIndex][0][0] # Y position of the first line
+    xIndex = xStart # Temp variable that can be changed during the loop
+    
+    # Start at first horizontal line. At each pixel, test to see if the pixel below
+    # or above passes the black threshold. Also check that the Y value is within the bounds
+    
+    while (xIndex <= xEnd):
+        
+        yIndex = yStart # Temp variable that can be changed during the loop
+        linePixels = [] # An array to hold the pixel coords of the line
+        
+        # Top Half 
+        
+        topHalf = []
+        
+        while (img[yIndex,xIndex] < blackThreshold) and (yIndex > 0) and (traversedImg[yIndex,xIndex] == 1.0):
+            
+            # If it does, store pixel and keep looping down until a line is created
+            
+            traversedImg[yIndex,xIndex] = 0.0
+            topHalf.append((yIndex,xIndex))
+            yIndex-=1
+            
+        # Bottom Half 
+        
+        yIndex = yStart + 1
+        bottomHalf = []
+        
+        while (img[yIndex,xIndex] < blackThreshold) and (yIndex < yDim) and (traversedImg[yIndex,xIndex] == 1.0):
+            
+            # If it does, store pixel and keep looping down until a line is created
+            
+            traversedImg[yIndex,xIndex] = 0.0
+            bottomHalf.append((yIndex,xIndex))
+            yIndex+=1
+        
+        # Combine the halves
+        
+        for coord in reversed(topHalf):
+            
+            linePixels.append(coord)
+            
+        for coord in bottomHalf:
+            
+            linePixels.append(coord)
+            
+        # Once it has been traced up to down, check to see if the array size 
+        # exceeds the stemThresh to be considered a stem
+        
+        if (len(linePixels) > stemThresh) and (len(linePixels) < verticalThresh):
+            
+            # If it passes, keep the line and skip a few x pixels right
+            
+            noteStems.append(linePixels)
+            xIndex += skipPixels
+
+        # If it doesn't, start over at the next pixel in the line
+        
+        else:
+        
+            xIndex += 1
+        
+        
+    currHorizLineIndex += 1
+
+# Add the lines to the test image to see if they line up with the original
+
+for line in noteStems:
+    
+    for pixel in line:
+        
+        testImg[pixel] = 0.0
+
+# should be 66, some are getting double counted due to being 2 pixels wide
+
+print(len(noteStems))
+
+# Display test image 
+    
+plt.imshow(testImg, cmap='gray', vmin=0,vmax=1)
 
 end = timer()
 print("\n Execution time: " + str(round(end - start, 4)) + " seconds.")

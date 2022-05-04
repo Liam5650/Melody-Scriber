@@ -165,7 +165,7 @@ verticalLines = [] # An array of lines represented by arrays of pixel coords
 verticalThresh = 75 # The vertical length of pixels needed to be considered a line
 numHorizLines = len(horizontalLines) # The number of horizontal lines to process
 currHorizLineIndex = 0 # The horizontal line to be processed
-skipPixels = 3 # The number of pixels to skip in the X search to avoid counting the same line twice
+skipPixels = 8 # The number of pixels to skip in the X search to avoid counting the same line twice
 
 while (currHorizLineIndex) < numHorizLines:
     
@@ -216,9 +216,9 @@ while (currHorizLineIndex) < numHorizLines:
         
         # We skip ahead through the Horizontal lines as long as the Y value of the 
         # found vertical line is greater than that of the horizontal line
-        
+
         while (currHorizLineIndex < numHorizLines) and (linePixels[-1][0] >= horizontalLines[currHorizLineIndex][0][0]):
-        
+
             currHorizLineIndex += 1
     
     # If we didnt find a vertical line, start again at the next horizontal line
@@ -239,5 +239,77 @@ for line in verticalLines:
 
 plt.imshow(testImg, cmap='gray', vmin=0,vmax=1)
 
+
+
+########## GET BARS ##########
+
+
+
+# We are going to assume for now that a vertical line intersects 10 horizontal
+# lines, ie. a standard treble + bass clef setup
+
+# The format of a bar will be represented as an array of pixel coordinates in the format
+# [[(TCTopLeftY,TCTopLeftX),(TCBottomRightY,TCBottomRightX)],[(BCTopLeftY,BCTopLeftX),(BCBottomRightY,BCBottomRightX)]]
+# where TC reprents the treble clef upper half and BC represents the bass clef lower half.
+
+horizLineIndex = 9 # Keep track of where we are in the horizontal line array. Index 9 is the 10th line, so the bottom of the first bar
+vertLineIndex = 0 # Keep track of where we are in the vertical line array
+bars = [] # the list containing bars in the format described above
+
+# Loop through. We don't want to process the last line as the start of a bar, 
+# so we stop at the length - 1 index. 
+
+while (vertLineIndex < len(verticalLines)-1):
+    
+    # We only need to poll the horizontal lines at an interval of 5 as we can
+    # get the rest of the coordinates simply from the vertical line. We must
+    # check the Y length of each vertical line to see what set of horizontal
+    # lines pair with them. Skip ahead when the Y value of a vert line exceeds
+    # the current horizontal line Y value. 
+    
+    if (verticalLines[vertLineIndex][-1][0] > horizontalLines[horizLineIndex][0][0]):
+        
+        horizLineIndex += 10
+    
+    # We also need to check if the vertical line is at the end of a line, as
+    # these must be skipped
+    
+    if (verticalLines[vertLineIndex][-1][0] < verticalLines[vertLineIndex+1][-1][0]):
+        
+        vertLineIndex += 1
+        
+    # Otherwise, we create the bar
+    
+    else:
+        
+        bar = [] # Stores the treble and bass clef halves of the bar coords
+        
+        # Handle the treble clef half of the coords
+        
+        TCHalf = [] 
+        TCHalf.append(verticalLines[vertLineIndex][0])
+        TCHalf.append((horizontalLines[horizLineIndex-5][0][0], verticalLines[vertLineIndex+1][0][1]))
+
+        # Handle the bass clef half of the coords
+        
+        BCHalf = []
+        BCHalf.append((horizontalLines[horizLineIndex-4][0][0],verticalLines[vertLineIndex][0][1]))
+        BCHalf.append(verticalLines[vertLineIndex+1][-1])
+        
+        # Create the bar
+        
+        bar.append(TCHalf)
+        bar.append(BCHalf)
+        
+        # Save the bar
+        
+        bars.append(bar)
+        
+        # Proceed to next vertical line
+        
+        vertLineIndex +=1
+
+print(bars)
+
 end = timer()
-print(end - start)
+print("\n Execution time: " + str(round(end - start, 4)) + " seconds.")

@@ -1,19 +1,22 @@
-import numpy as np
 import matplotlib.pyplot as plt
 from skimage import io
 from skimage.color import rgb2gray
 from get_bars import getHorizontalLines, getVerticalLines, getBars
+from get_clefs import getClefs
 from timeit import default_timer as timer
 
 start = timer()
 
 # Load image
+
 img = io.imread('./test_images/test_image_1.png')
 
 # Convert the image to a 2D array representing pixels in grayscale from 0-1
+
 img = rgb2gray(img)
 
 # Display the image
+
 fig = plt.figure()
 fig.set_facecolor((0.8,0.8,0.8))
 plt.imshow(img, cmap='gray')
@@ -32,6 +35,10 @@ print("Number of horizontal lines found: " + str(len(horizontalLines)))
 print("Number of vertical lines found:   " + str(len(verticalLines)))
 print("Number of staffs created:         " + str(len(bars)))
 print("Number of note stems found:       " + str(len(stemLines)))
+
+clefs = getClefs(img, horizontalLines)
+
+print("Clef signature by staff index:    " + str(clefs))
 
 end = timer()
 print("\nExecution time: " + str(round(end - start, 4)) + " seconds.")

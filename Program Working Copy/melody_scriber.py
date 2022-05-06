@@ -2,6 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage import io
 from skimage.color import rgb2gray
+from get_bars import getHorizontalLines, getVerticalLines, getBars
+from timeit import default_timer as timer
+
+start = timer()
 
 # Load image
 img = io.imread('./test_images/test_image_1.png')
@@ -17,3 +21,17 @@ plt.title("2D Array Representation of the Image in Grayscale")
 plt.xlabel('X')
 plt.ylabel('Y')
 plt.colorbar();
+
+# Get components
+
+horizontalLines = getHorizontalLines(img)
+verticalLines, stemLines = getVerticalLines(img, horizontalLines)
+bars = getBars(verticalLines, horizontalLines)
+
+print("Number of horizontal lines found: " + str(len(horizontalLines)))
+print("Number of vertical lines found:   " + str(len(verticalLines)))
+print("Number of staffs created:         " + str(len(bars)))
+print("Number of note stems found:       " + str(len(stemLines)))
+
+end = timer()
+print("\nExecution time: " + str(round(end - start, 4)) + " seconds.")

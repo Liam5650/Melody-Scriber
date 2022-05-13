@@ -38,7 +38,7 @@ print("Number of note stems found:       " + str(len(stemLines)))
 
 clefs = getClefs(img, horizontalLines)
 
-print("Clef signature by staff index:    " + str(clefs))
+print("\nClef signature by staff index:    " + str(clefs))
 
 end = timer()
 print("\nExecution time: " + str(round(end - start, 4)) + " seconds.")

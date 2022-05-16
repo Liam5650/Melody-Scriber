@@ -3,6 +3,7 @@ from skimage import io
 from skimage.color import rgb2gray
 from get_bars import getHorizontalLines, getVerticalLines, getBars
 from get_clefs import getClefs
+from get_notes import getNotes
 from timeit import default_timer as timer
 
 start = timer()
@@ -39,6 +40,8 @@ print("Number of note stems found:       " + str(len(stemLines)))
 clefs = getClefs(img, horizontalLines)
 
 print("\nClef signature by staff index:    " + str(clefs))
+
+notes = getNotes(bars, stemLines)
 
 end = timer()
 print("\nExecution time: " + str(round(end - start, 4)) + " seconds.")

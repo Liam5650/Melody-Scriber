@@ -4,6 +4,7 @@ from skimage.color import rgb2gray
 from get_bars import getHorizontalLines, getVerticalLines, getBars
 from get_clefs import getClefs
 from get_notes import getNotes
+from create_midi import createMidi
 from timeit import default_timer as timer
 
 start = timer()
@@ -42,6 +43,9 @@ clefs = getClefs(img, horizontalLines)
 print("\nClef signature by staff index:    " + str(clefs))
 
 notes = getNotes(bars, stemLines)
+print(notes[0])
+
+createMidi(notes) # This writes a file in the "midi_output" folder
 
 end = timer()
 print("\nExecution time: " + str(round(end - start, 4)) + " seconds.")

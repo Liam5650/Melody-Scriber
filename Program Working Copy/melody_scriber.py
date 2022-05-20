@@ -3,7 +3,8 @@ from skimage import io
 from skimage.color import rgb2gray
 from get_bars import getHorizontalLines, getVerticalLines, getBars
 from get_clefs import getClefs
-from get_notes import getNotes
+from get_notes import getNotes, sortStems
+from get_whole_notes import getWholeNotes
 from create_midi import createMidi
 from timeit import default_timer as timer
 
@@ -33,19 +34,23 @@ horizontalLines = getHorizontalLines(img)
 verticalLines, stemLines = getVerticalLines(img, horizontalLines)
 bars = getBars(verticalLines, horizontalLines)
 
-print("Number of horizontal lines found: " + str(len(horizontalLines)))
-print("Number of vertical lines found:   " + str(len(verticalLines)))
-print("Number of staffs created:         " + str(len(bars)))
-print("Number of note stems found:       " + str(len(stemLines)))
+#print("Number of horizontal lines found: " + str(len(horizontalLines)))
+#print("Number of vertical lines found:   " + str(len(verticalLines)))
+#print("Number of staffs created:         " + str(len(bars)))
+#print("Number of note stems found:       " + str(len(stemLines)))
 
 clefs = getClefs(img, horizontalLines)
 
-print("\nClef signature by staff index:    " + str(clefs))
+#print("\nClef signature by staff index:    " + str(clefs))
 
-notes = getNotes(bars, stemLines)
-print(notes[0])
+sortedStems = sortStems(bars, stemLines)
 
-createMidi(notes) # This writes a file in the "midi_output" folder
+#print(sortedStems[0])
+
+wholeNotes = getWholeNotes(img, sortedStems, bars)
+print(wholeNotes)
+
+createMidi(wholeNotes) # This writes a file in the "midi_output" folder
 
 end = timer()
 print("\nExecution time: " + str(round(end - start, 4)) + " seconds.")

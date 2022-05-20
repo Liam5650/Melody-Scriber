@@ -31,7 +31,7 @@ def getClefs(img, horizontalLines):
     
     for staffIndex in range(numStaffs):
         
-        print("\nCurrent staff being processed: " + str(staffIndex+1))
+        #print("\nCurrent staff being processed: " + str(staffIndex+1))
         
         # Measure the Y distance between the top line and bottom line in the staff.
     
@@ -110,7 +110,7 @@ def getClefs(img, horizontalLines):
                 
             yPos += 1
             
-        print("Treble confidence: " + str(trebleConfidence)) 
+        #print("Treble confidence: " + str(trebleConfidence)) 
         
         # Bass Clef Search Section -
         
@@ -165,7 +165,7 @@ def getClefs(img, horizontalLines):
                 
             yPos += 1
             
-        print("Bass confidence: " + str(bassConfidence)) 
+        #print("Bass confidence: " + str(bassConfidence)) 
         
         # Compare the confidences and append the appropriate clef
         
@@ -177,7 +177,7 @@ def getClefs(img, horizontalLines):
             
             clefs.append('b')
     
-    print("\nExpected return: ['t', 'b', 't', 'b', 't', 'b', 't', 'b']")
-    print("Actual return:   " + str(clefs))
+    #print("\nExpected return: ['t', 'b', 't', 'b', 't', 'b', 't', 'b']")
+    #print("Actual return:   " + str(clefs))
     
     return clefs

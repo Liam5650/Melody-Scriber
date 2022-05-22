@@ -2,8 +2,9 @@ from skimage import io
 from skimage.color import rgb2gray
 from skimage.transform import rescale
 from skimage.metrics import mean_squared_error
+from get_notes import generateNoteList
 
-def getWholeNotes(img, stemList, bars):
+def getWholeNotes(img, stemList, bars, notes = None):
     
     # Takes in the image of sheet music to process as well as a list of the sorted
     # note stems by staff/bar as input. Also takes in the coords of the bars.
@@ -20,12 +21,13 @@ def getWholeNotes(img, stemList, bars):
     
     # Process each bar
     
-    notes = [] # an array to hold the final notes discovered in the same format of the stemlist
+    # an array to hold the final notes discovered in the same format of the stemlist
+    if not (notes): #If a note list is not passed to getNotes, generate a note list to record them in
+        notes = generateNoteList(bars)
+    
     barIndex = 0 # keep track of what bar we are currently processing
     
     for bar in bars:
-        
-        barNotes = [[],[]] # Holds a list of the notes in the treble and bass staffs respectively
         
         # For each bar, check to see if the top or bottom stem is empty. 
         # Set the staff index to be searched, the top and bottom Y coordinates of
@@ -52,7 +54,6 @@ def getWholeNotes(img, stemList, bars):
             # Implement later if necessary. For now, just append an empty list of notes
             # for the bar. 
             
-            notes.append(barNotes)
             barIndex += 1
             continue
         
@@ -122,10 +123,7 @@ def getWholeNotes(img, stemList, bars):
         if (noteConfidence != []):
 
             center = (noteConfidence[0][1][0]+(scaledNoteImg.shape[0]//2), noteConfidence[0][1][1]+(scaledNoteImg.shape[1]//2))
-            barNotes[staffIndex].append((center,4))
-        
-        barIndex += 1
-        
-        notes.append(barNotes)
+            notes[barIndex][staffIndex].append((center,4))
+        barIndex += 1        
     
     return notes

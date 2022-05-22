@@ -5,7 +5,7 @@ from get_bars import getHorizontalLines, getVerticalLines, getBars
 from get_clefs import getClefs
 from get_notes import getNotes, sortStems
 from get_whole_notes import getWholeNotes
-#from create_midi import createMidi
+from create_midi import createMidi
 from timeit import default_timer as timer
 
 start = timer()
@@ -45,13 +45,14 @@ clefs = getClefs(img, horizontalLines)
 
 sortedStems = sortStems(bars, stemLines)
 
-getNotes(bars, stemLines)
 #print(sortedStems[0])
 
 wholeNotes = getWholeNotes(img, sortedStems, bars)
-#print(wholeNotes)
 
-#createMidi(wholeNotes) # This writes a file in the "midi_output" folder
+notes = getNotes(img, bars, stemLines, notes = wholeNotes)
+print(notes)
+
+createMidi(wholeNotes) # This writes a file in the "midi_output" folder
 
 end = timer()
 print("\nExecution time: " + str(round(end - start, 4)) + " seconds.")

@@ -4,19 +4,9 @@ import matplotlib.pyplot as plt
 
 from skimage import io
 from skimage.color import rgb2gray
+from skimage.transform import resize
+from skimage.metrics import mean_squared_error
 import get_bars
-
-#Code to test filling in parts of the sheet and altering it. 
-#Just simple array stuff that I<m reminding myself of
-
-#for i in range(len(img)):
-#    for j in range(0,150): #len(img[1])):
-#        img[i][j] = 0
-
-#len(img)
-#len(img[1])
-#img[1][1]
-
 # Load image
 
 img = io.imread('./test_images/test_image_1.png')
@@ -25,33 +15,13 @@ img = io.imread('./test_images/test_image_1.png')
 
 img = rgb2gray(img)
 
-def place_cursor(x,y):
-    #Generates a cursor for identifying spots on the image, purely used for testing
-    thickness = 3
-    size = 20
-    for i in range (x-size,x+size):
-        for j in range (y-thickness,y+thickness):
-            img[j][i] = 0
-    for j in range (y-size,y+size):
-        for i in range (x-thickness,x+thickness):
-            img[j][i] = 0
-
-#place_cursor(391,245)
-
-
-#Top left of the second bar is located at (241,140)
-#Bottom right of the top half of the bar is located at (391,165)
-#Top left of the bottom half of the second bar is at (241,207)
-#Bottom left of the second bar is at (391,245)
-
-'''
-if given the top left and bottom right of the staff then you'll need to 
-subdivide the staff into the seperate lines along which notes will be located
-then you will want to scan across each line for anomalies in a 1 pixel wide 
-range. This depends on the bias of the the image - there must be exclusively 
-whitespace between the lines of the staff except for symbols and notes
-will also have to check above and below the staff
-'''
+def scaleNote(noteImage,newHeight):
+    #Scales note images down for comparison
+    noteDim = noteImage.shape
+    scaledNote = resize(noteImage, (newHeight, round((noteDim[1] / noteDim[0]) 
+                        * newHeight)), anti_aliasing = False)
+    
+    return scaledNote
 
 def getNotes(bars, stemLines,stemNum = 0, barNum = 0):
     '''
@@ -70,29 +40,68 @@ def getNotes(bars, stemLines,stemNum = 0, barNum = 0):
     orientation of the notes before scanning along the rest of the stem for chords
 
     '''
-    stemSort = sortStems(bars,stemLines)
     
-    #cut up the staff
-    noteY = (bars[0][0][0][0] - bars[0][0][1][0])/4
+    #cut up staff into 4 to get the height of a note-head/lane-of-staff
+    noteY = ((bars[0][0][0][0] - bars[0][0][1][0])/4 )*(-1)
     
+    # Import notes for CV 
+    noteSolOn = rgb2gray(io.imread('./note_images/solOn.png'))#Solid
+    noteSolOff = rgb2gray(io.imread('./note_images/solOff.png'))
+    noteHolOff = rgb2gray(io.imread('./note_images/holOff.png')) #Hollow
+    noteHolOn = rgb2gray(io.imread('./note_images/holOn.png')) 
+      
+    #arrange in a list for easier passing between functions
+    CVnotes = [noteSolOff, noteHolOff, noteSolOn, noteHolOn]
+      
+    # Get the imported note dimensions
+    #noteHOffDim = noteHolOff.shape # Tuple of the (Y,X) dims
+    #noteHOnDim = noteHolOn.shape 
+    #noteSOffDim = noteSolOff.shape
+    #print('Dims of hollow notes then solid note', noteHOffDim, noteHOnDim, noteSOffDim)
     
-    #for bar in stemSort:
-        
+    #Scale notes for comparison against music sheet
+    noteHolOff, noteHolOn, noteSolOff = scaleNote(noteHolOff,noteY), scaleNote(
+        noteHolOn,noteY), scaleNote(noteSolOff,noteY)
     
-    return stemSort
+    #noteHOffDim,noteHOnDim,noteSOffDim = noteHolOff.shape, noteHolOn.shape, noteSolOff.shape # Tuple of the (Y,X) dims
+    #print('note Y dimension', noteY, 'Dims of hollow notes then solid note', noteHOffDim, noteHOnDim, noteSOffDim)
     
-    #Scale notes for comparison
+    #Sort note stems for procedural evaluation of notes and ordered recording
+    sortedStems = sortStems(bars,stemLines)
     
     #Loop through stems per bar until there are no more bars 
     #could modify to have terminal bar
-    
-    
+    for i, bar in enumerate(sortedStems):
+        for j, staff in enumerate(bar):
+            
+            #Takes a baseline y in the relevant staff used for as an origin
+            staffTop = bars[i][j][0][0]
+            
+            for note in staff:
+                
+                #get x position of stem, top of stem, and bottom of stem
+                stemX, stemTop, stemBot = note[0][1], note[0][0], note[((len(note))-1)][0]
+                #print(note)
+                #check top and bottom of stem for the expected steps (music term) from top of staff 
+                #topSteps = (stemTop - staffTop)//(noteY/2)
+                #botSteps = (stemBot - staffTop)//(noteY/2)
+                
+                #Get the confidence of note head on top of stem
+                #topConfidence = headCompare(staffTop, topSteps, note, CVnotes)
+                #botConfidence = headCompare(staffTop, botSteps, note, CVnotes)
+                
+                #create a comparison image window
+                #bottom note test
+                
+                
+                
+                #take a window image of the presumed position of the note at both ends
+     
+    return #NOTE CHANGE RETURN
     
         
 def sortStems(bars,stemLines):
     '''
-    
-
     Parameters
     ----------
     bars : Nx2x2x2 array
@@ -104,6 +113,7 @@ def sortStems(bars,stemLines):
     stemSort : Lx2xNxMx2
         L: number of Bars; 2:T or B staff; N: number of lines; M: length of line; 2: y,x coords of line
     -------
+    Sorts the Stems of the notes in order and organizes them within the bars and stems
     '''
     
     stemX = 0
@@ -140,12 +150,12 @@ def sortStems(bars,stemLines):
             #and if x of stem exists within bar
             ) and ((barLeft < stem[0][1]) and (barRight > stem[0][1]))):
                 
-                        stemSort[i][j].append([stem]) #add element to sorted stems
+                        stemSort[i][j].append(stem) #add element to sorted stems
                         #NOTE: would like to remove stems as iterating through for efficiency, but interferes with iteration   
                         #stemLines.remove(stem)
                         #place_cursor(stem[1][1],stem[1][0])
     
-    #must now order the stems within the bar, sort using function to pull x values
+    #must now order the stems within the bar, sort using function to pull x values from stems
     for bar in range(len(stemSort)):
         for staff in [0,1]:
             stemSort[bar][staff].sort(key=note_x)
@@ -153,39 +163,54 @@ def sortStems(bars,stemLines):
     
     return stemSort
 
-def note_x(staff): #Used as key for sorting notes within a staff
-    return staff[0][0][1] #this returns the x coordinate of the top of the stem of the note
+def note_x(staff): ###Used as key for sorting notes within a staff###
+    return staff[0][1] #this returns the x coordinate of the top of the stem of the note
 
-'''        
-    for bar in bars: 
-        #go till stem index is out of bar check top and bottom of the line given
-        for stem in stemLines:
-
-            if (stem[0][1] > bar[1][1][1] #the next stem is on a new bar
-                )  or (stemX > stem[0][1]) : #we've wrapped the page
-                
-                stemX = stem[0][1]
-                break
-            
-            
-            
-            stemNum += 1
-            print(2)
-        print(1)
-    
-    return stemSort 
- '''       
-def headCompare():
-    
+  
+def headCompare(staffTop, steps, note, CVnotes):
     #import hollow and solid note heads NOTE: may need to distinguish more 
     #effectively given that notes aren't identical in appearence given which 
     #side of the stem they,re found on
     
-    holOn = rgb2gray(io.imread('./note_images/holOn.png'))
-    holOff = rgb2gray(io.imread('./note_images/holOff.png'))
-    solOff = rgb2gray(io.imread('./note_images/solOn.png'))
+    if (steps % 2):
+        compImgIdx = 2
+    else:
+        compImgIdx = 0
+    
+    #top
+    #windowImg = img[staff:right slot+noteY,stemX+so]
+    
+    
+    
+    return
     
 def tailCompare():
-    return
     # checks at opposite end of where the terminal note head is to find a tail 
     # to deduce the time of the note
+    
+    return
+    
+def place_cursor(x,y):
+    #Generates a cursor for identifying spots on the image, purely used for testing
+    thickness = 3
+    size = 20
+    for i in range (x-size,x+size):
+        for j in range (y-thickness,y+thickness):
+            img[j][i] = 0
+    for j in range (y-size,y+size):
+        for i in range (x-thickness,x+thickness):
+            img[j][i] = 0
+
+#Top left of the second bar is located at (241,140)
+#Bottom right of the top half of the bar is located at (391,165)
+#Top left of the bottom half of the second bar is at (241,207)
+#Bottom left of the second bar is at (391,245)
+
+'''
+if given the top left and bottom right of the staff then you'll need to 
+subdivide the staff into the seperate lines along which notes will be located
+then you will want to scan across each line for anomalies in a 1 pixel wide 
+range. This depends on the bias of the the image - there must be exclusively 
+whitespace between the lines of the staff except for symbols and notes
+will also have to check above and below the staff
+'''

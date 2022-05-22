@@ -35,14 +35,14 @@ def getWholeNotes(img, stemList, bars):
         if (len(stemList[barIndex][0])>0 and stemList[barIndex][1] == []):
             
             staffIndex = 1 # store reference to know where to store the note later in the notes list
-            xPos = stemList[barIndex][0][0][0][0][1] # the reference x position for our search
+            xPos = stemList[barIndex][0][0][0][1] # the reference x position for our search
             staffTop = bar[staffIndex][0][0] # the top Y position of the staff
             staffBottom = bar[staffIndex][1][0] # the bottom Y position of the staff   
             
         elif (len(stemList[barIndex][1])>0 and stemList[barIndex][0] == []):
               
             staffIndex = 0 # store reference to know where to store the note later in the notes list
-            xPos = stemList[barIndex][1][0][0][0][1] # the reference x position for our search
+            xPos = stemList[barIndex][1][0][0][1] # the reference x position for our search
             staffTop = bar[staffIndex][0][0] # the top Y position of the staff
             staffBottom = bar[staffIndex][1][0] # the bottom Y position of the staff         
               

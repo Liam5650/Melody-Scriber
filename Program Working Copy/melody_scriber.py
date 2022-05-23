@@ -51,7 +51,7 @@ wholeNotes = getWholeNotes(img, sortedStems, bars)
 
 notes = getNotes(img, bars, stemLines, notes = wholeNotes)
 print(notes)
-start = timer()
+
 createMidi(wholeNotes) # This writes a file in the "midi_output" folder
 
 end = timer()

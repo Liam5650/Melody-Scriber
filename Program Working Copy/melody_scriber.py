@@ -18,6 +18,7 @@ img = io.imread('./test_images/test_image_1.png')
 
 img = rgb2gray(img)
 
+'''
 # Display the image
 
 fig = plt.figure()
@@ -27,6 +28,7 @@ plt.title("2D Array Representation of the Image in Grayscale")
 plt.xlabel('X')
 plt.ylabel('Y')
 plt.colorbar();
+'''
 
 # Get components
 
@@ -50,7 +52,6 @@ sortedStems = sortStems(bars, stemLines)
 wholeNotes = getWholeNotes(img, sortedStems, bars)
 
 notes = getNotes(img, bars, stemLines, notes = wholeNotes)
-print(notes[0])
 
 createMidi(notes, bars, horizontalLines) # This writes a file in the "midi_output" folder
 

@@ -50,9 +50,9 @@ sortedStems = sortStems(bars, stemLines)
 wholeNotes = getWholeNotes(img, sortedStems, bars)
 
 notes = getNotes(img, bars, stemLines, notes = wholeNotes)
-print(notes)
+print(notes[0])
 
-createMidi(wholeNotes) # This writes a file in the "midi_output" folder
+createMidi(notes, bars, horizontalLines) # This writes a file in the "midi_output" folder
 
 end = timer()
 print("\nExecution time: " + str(round(end - start, 4)) + " seconds.")

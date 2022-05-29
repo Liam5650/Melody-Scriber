@@ -1,10 +1,20 @@
+import numpy
 from skimage import io
 from skimage.color import rgb2gray
 from skimage.transform import resize
 from skimage.metrics import mean_squared_error
 
+import matplotlib.pyplot as plt
+# Load image
+bimg = io.imread('./test_images/test_image_1.png')
+
+# Convert the image to a 2D array representing pixels in grayscale from 0-1
+
+#bimg = rgb2gray(bimg)
+
+
 #to be used for getHorizontalLines when makes initial y guess more precise
-import get_bars
+#import get_bars
 
 def getNotes(img, bars, stemLines,stemNum = 0, barNum = 0, notes = None):
     '''
@@ -32,8 +42,8 @@ def getNotes(img, bars, stemLines,stemNum = 0, barNum = 0, notes = None):
     headHeight = int(((bars[0][0][0][0] - bars[0][0][1][0])/4 )*(-1)) 
     
     # Import notes for CV 
-    noteSolOn = rgb2gray(io.imread('./note_images/solOn.png'))#Solid
-    noteSolOff = rgb2gray(io.imread('./note_images/solOff.png'))
+    noteSolOff = rgb2gray(io.imread('./note_images/solOff.png'))#Solid
+    noteSolOn = rgb2gray(io.imread('./note_images/solOn.png'))
     noteHolOff = rgb2gray(io.imread('./note_images/holOff.png')) #Hollow
     noteHolOn = rgb2gray(io.imread('./note_images/holOn.png')) 
     
@@ -42,7 +52,7 @@ def getNotes(img, bars, stemLines,stemNum = 0, barNum = 0, notes = None):
             ),scaleNote(noteHolOn,headHeight), scaleNote(noteSolOff,headHeight), scaleNote(noteSolOn,headHeight)  
     
     #arrange in a list for easier passing between functions
-    CVnotes = [noteSolOff, noteHolOff, noteSolOn, noteHolOn]
+    CVnotes = [noteSolOff, noteSolOn, noteHolOff, noteHolOn]
     
     #If a note list is not passed to getNotes, generate a note list to record them in
     if not (notes):
@@ -71,18 +81,39 @@ def getNotes(img, bars, stemLines,stemNum = 0, barNum = 0, notes = None):
                 #Get the note head guessed at the top and bottom of the stem (guess[0] = 0 if presumed none)
                 topGuess = headCompare(img, staffTop, topSteps, stem, CVnotes, headHeight, 1)
                 botGuess = headCompare(img, staffTop, botSteps, stem, CVnotes, headHeight, -1)
-                
+                #print("topGuess", topGuess[0], "botGuess", botGuess[0])
                 #If a note head is detected at one endd of the stem, 
-                if topGuess[0] != 0: #check the tails on the opposite end, then record the note
+                if topGuess[0] != -1: #check the tails on the opposite end, then record the note
+                    
                     #check tail at bottom of stem
-                    time = tailCompare()
+                    if (topGuess[0] == 2) or (topGuess[0] == 3):
+                        time = 2
+                    else:      
+                        time = 1/ (1 + tailCompare(img, stem, -1))
                     notes[i][j].append(((topGuess[1],stemX),time))
                 
-                elif botGuess[0] != 0:
+                elif botGuess[0] != -1:
+                    
                     #check tail at top of stem
-                    time = tailCompare()
+                    if (botGuess[0] == 2) or (botGuess[0] == 3):
+                        time = 2
+                    else:      
+                        time = 1/ (1 + tailCompare(img, stem, 0))
+
                     notes[i][j].append(((botGuess[1],stemX),time))
                     
+               #if note is less than a quarter note, make sure to check left tail
+    fig = plt.figure()
+    #fig.set_facecolor((0.8,0.8,0.8))
+    # for i in range(20):
+    #     for j in range(20):
+    #         bimg[i][j] = (255,0,0)
+    plt.imshow(bimg, cmap='Reds')
+    #plt.imshow(bimg, cmap='')
+    plt.title("2D Array Representation of the Image in Grayscale")
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.colorbar();      
     return notes
     
         
@@ -159,10 +190,13 @@ def scaleNote(noteImage,newHeight):
     
 def headCompare(img, staffTop, steps, stem, CVnotes, headHeight, side):
     '''
+    Compares the set of head images against the presumed location of note 
+    heads, returning the height of the center of the note as well as which type 
+    of head is the best fit
     
     Parameters
     ----------
-    staffTop : integer
+    staffTop : int
         The y coordinate of the top of the staff
     steps : int
         The number of steps from the note that would be intersecting with the top line of the staff
@@ -178,12 +212,12 @@ def headCompare(img, staffTop, steps, stem, CVnotes, headHeight, side):
     Returns 
     -------
     noteGuess: int
-        0, 1, 2, 3, 4 for none, solid on, hollow on, solid off, hollow off note head at specified location
+        -1, 0, 1, 2, 3, for none, solid on, hollow on, solid off, hollow off note head at specified location
     yCenter: int
         the y coordinate of the center of the note
     '''
     windowRange = 10 #the range of starting y coordinates to be used for evaluating notes
-    noteGuess = 0 #The return, which will be overwritten once minimum MSE is overcome
+    noteGuess = -1 #The return, which will be overwritten once minimum MSE is overcome
     maxErr = 0.2 #maximum MSE to be considered a viable guess
     confidence = 1 # a default degree of MSE confidence 
     yCenter = 1 #The center y of the detected note 
@@ -191,7 +225,6 @@ def headCompare(img, staffTop, steps, stem, CVnotes, headHeight, side):
     #Test all of the notes within the CV note list (could be made more pythonic by simply iterating through the elements of CVnotes)
     for i in range(len(CVnotes)): #This
         #idxCV = idxStart + i
-        idxCV = i
         
         #in case the proper step isn't precisely found, descend the comparison window a pixel at a time
         #Should introduce an x step as well of about 2 pixels
@@ -201,30 +234,148 @@ def headCompare(img, staffTop, steps, stem, CVnotes, headHeight, side):
             if side == -1:
                 windowImg = img[yStep+staffTop+ round(steps * headHeight/2)- headHeight
                 :yStep + staffTop + round(steps * headHeight/2), 
-                stem[0][1]+(CVnotes[idxCV].shape[1]*side):stem[0][1]]
+                stem[0][1]+(CVnotes[i].shape[1]*side):stem[0][1]]
             
             #Right side of stem window
             else: #need to swap order of x coordinates to generate image
                 windowImg = img[yStep + staffTop+ round(steps * headHeight/2)- headHeight
                 :yStep + staffTop + round(steps * headHeight/2), stem[0][1]:
-                stem[0][1]+(CVnotes[idxCV].shape[1]*side)]
+                stem[0][1]+(CVnotes[i].shape[1]*side)]
             
             #Error assignment and comparison
-            MSE = mean_squared_error(CVnotes[idxCV], windowImg)
+            MSE = mean_squared_error(CVnotes[i], windowImg)
         
             if (MSE < maxErr) & (MSE < confidence):
-                noteGuess = i + 1
+                noteGuess = i
+                confidence = MSE
                 yCenter = round(yStep + staffTop + round(steps * headHeight/2) - headHeight/2)
                 #print(windowImg.shape, CVnotes[idxCV].shape)
                 #place_cursor(stem[0][1]+(CVnotes[idxCV].shape[1]*side),yCenter)
       
     return noteGuess, yCenter
+
     
-def tailCompare():
-    # checks at opposite end of where the terminal note head is to find a tail 
-    # to deduce the time of the note
+def tailCompare(img, stem, side = 0):
+    '''
+    Checks at opposite end of where the terminal note head is to find a tail 
+    o deduce the time of the note (quarter note, eighth note, etc)
+
+    Parameters
+    ----------
+    img : black/white img
+        Music sheet
+    stem : list
+        x,y coordinates of the presumed center of the stem line
+    side : int, optional
+        Denotes top(0) or bottom(-1) of stem to check The default is 0.
+
+    Returns
+    -------
+    tails: int
+        number of tails
+    '''
+    # 
     
-    return 1
+    tailThreshold = 10 #number of pixels needed to detect a tail
+    blackThreshold = 0.5 # The float value threshold in which we evaluate as a line
+    stemEnd = stem[side] #The coordinates of the end of the tail to be checked
+    
+    
+    #use numpy array to add to coordinates more easily
+    checkPixel = numpy.array(stemEnd) #This will be the pixel used to move along the tail
+    #tailLine = [] #Can write checkpixels into this line, used to find other tails late as they will be at the same angle
+    tails = 1
+    #need to check for appropriate length of tail, and need to not confuse tail
+    #with horizontal lines of the staff
+    
+    def sideSpecificCompare(checkPixel, LeftOrRight, TopOrBot):
+        along = True
+        
+        upWidth = 0
+        downWidth = 0
+        lockDist = 0
+        locked = None
+        
+        for pixel in range(tailThreshold):
+    
+            #proceed diagonally one pixel and in direction of stem if possible
+            if lockDist > 2:
+                locked = True
+            
+            
+            alongPixel = checkPixel + numpy.multiply([1,TopOrBot],LeftOrRight)
+            downPixel = checkPixel +numpy.multiply([1,0],LeftOrRight)
+            awayPixel = checkPixel + numpy.multiply([-1,TopOrBot],LeftOrRight)
+            acrossPixel = checkPixel + numpy.multiply([0,TopOrBot], LeftOrRight)
+            
+            
+            if (img[alongPixel[0],alongPixel[1]] < blackThreshold) and along:
+                
+                checkPixel = alongPixel
+                lockDist += 1
+
+            #if cant proceed down one pixel proceed across and try to move up one pixel
+            elif not locked and (img[awayPixel[0],awayPixel[1]] < blackThreshold):
+                checkPixel = awayPixel
+                along = False
+                return 0
+            #else proceed across 
+            elif img[acrossPixel[0],acrossPixel[1]] < blackThreshold:
+                checkPixel = acrossPixel
+                
+            elif locked and (img[downPixel[0],downPixel[1]] < blackThreshold):
+                checkPixel = downPixel
+            
+            else:
+                return 0
+            place_colour(checkPixel[1],checkPixel[0])
+        ticker = 0
+        #check the difference between y values at beginning and end
+        if abs(checkPixel[0] - stemEnd[0]) < 5:
+    
+            #if the difference is small (3 or less) check the thickness of the the tail 
+            #because line will only be flat and a tail, if it is thicker than a staff line
+
+            #get pixel of tail chosen that's black
+            widthPixel = checkPixel + [-1,0]
+            
+            #scan up
+            while (img[widthPixel[0],widthPixel[1]] < blackThreshold) and (ticker < 10):
+                widthPixel = checkPixel + [-1,0]
+                upWidth += 1
+                place_colour(widthPixel[1],widthPixel[0])
+                ticker +=1
+            widthPixel = checkPixel + [1,0]
+            #scan down
+            while (img[widthPixel[0], widthPixel[1]] < blackThreshold) and (ticker < 10):
+                widthPixel = checkPixel + [1,0]
+                downWidth += 1
+                place_colour(widthPixel[1],widthPixel[0])
+                ticker +=1
+            #get difference
+            width = 1 + upWidth + downWidth
+            #if difference is less that 3, tails = 0
+            if width < 5:
+                tails = 0 
+                #print("too flat", width)
+                return tails
+            
+        #check for more tails
+        
+        #print("end tail", checkPixel[0] - stemEnd[0])
+        return 1
+        
+        
+    if side == 0:
+        LeftOrRight = 1
+    else:
+        LeftOrRight = -1
+        
+    tails = sideSpecificCompare(checkPixel, LeftOrRight, 1) or sideSpecificCompare(checkPixel, LeftOrRight, -1)
+    return tails
+
+    
+
 
 def generateNoteList(bars):
     notes = []
@@ -234,7 +385,27 @@ def generateNoteList(bars):
     
     return notes
     
+def place_cursor(x,y):
+        #Generates a cursor for identifying spots on the image, purely used for testing
+        thickness = 2
+        size = 13
+        for i in range (x-size,x+size):
+            for j in range (y-thickness,y+thickness):
+                bimg[j][i] = 0
+        for j in range (y-size,y+size):
+            for i in range (x-thickness,x+thickness):
+                bimg[j][i] = 0
 
+def place_colour(x,y):
+        #Generates a colour dot for drawing lines
+        thickness = 2
+        size = 2
+        for i in range (x-size,x+size):
+            for j in range (y-thickness,y+thickness):
+                bimg[j][i] = (255,0,0)
+        for j in range (y-size,y+size):
+            for i in range (x-thickness,x+thickness):
+                bimg[j][i] = (255,0,0)
 '''
 if given the top left and bottom right of the staff then you'll need to 
 subdivide the staff into the seperate lines along which notes will be located
@@ -251,7 +422,7 @@ will also have to check above and below the staff
     img = rgb2gray(img)
 
 
-    #print(yCenter)
+    # print(yCenter)
     # fig = plt.figure()
     # fig.set_facecolor((0.8,0.8,0.8))
     # plt.imshow(img, cmap='gray')
@@ -260,14 +431,5 @@ will also have to check above and below the staff
     # plt.ylabel('Y')
     # plt.colorbar();      
 
-    def place_cursor(x,y):
-        #Generates a cursor for identifying spots on the image, purely used for testing
-        thickness = 2
-        size = 9
-        for i in range (x-size,x+size):
-            for j in range (y-thickness,y+thickness):
-                img[j][i] = 0
-        for j in range (y-size,y+size):
-            for i in range (x-thickness,x+thickness):
-                img[j][i] = 0
+    
 '''

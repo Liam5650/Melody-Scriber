@@ -8,6 +8,63 @@ from skimage.metrics import mean_squared_error
 
 def getBars(img):
     
+    horizontalLines = getHorizontalLines(img)
+    verticalLines, stemLines = getVerticalLines(img, horizontalLines)
+    clefs = getClefs(img, horizontalLines)
+    
+    vertLineIndex = 0
+    buffer = 2 # set for how many pixels above and below the vert line to process horiz lines
+    horizStartIndex = 0
+    horizEndIndex = 0
+    numVertLines = len(verticalLines)-2
+    numHorizLines = len(horizontalLines)
+    
+    # Go through the vertical lines sequentially
+    
+    while vertLineIndex < numVertLines:
+        
+        line = verticalLines[vertLineIndex]
+        lineTop = line[0][0]-buffer
+        lineBottom = line[-1][0]+buffer
+        
+        # Test to see how many horiz lines are attached to the vert line to 
+        # determine how many staffs are in the bar, whether it is complete, etc
+        
+        while (horizEndIndex < numHorizLines and lineBottom >= horizontalLines[horizEndIndex][0][0] >= lineTop):
+            
+            horizEndIndex += 1
+        
+        # Test to see how many vertical lines are bound by the horizontal lines 
+        # we just found
+        
+        xEnd = horizontalLines[horizStartIndex][-1][1]
+        vertEndIndex = vertLineIndex
+        
+        while (xEnd - verticalLines[vertEndIndex][0][1] > 10) :
+            vertEndIndex += 1
+        
+        # Process into bars based on the paired vert and horiz lines
+        
+        # Skip ahead through vertical lines that have already been processed
+        # to begin the search for a new line of bars.
+        
+        vertLinesToSkip = (vertEndIndex - vertLineIndex) + 1
+        horizStartIndex = horizEndIndex
+        vertLineIndex += vertLinesToSkip
+    
+    # Expected values are either 5 or 10 horiz lines for now. Process based on that.
+    
+    # Get the rest of the vertical lines that belongs to the set of horz lines.
+    
+    # Process into individual bars. Skip ahead of the vertical lines processed 
+    # to begin the next set. 
+    
+    # Return the final objects
+
+
+
+def getBarsOld(img):
+    
     # This function takes in two arrays of lines represented as pixel coordinates
     # that represent horizontal lines and vertical lines of a bar.
     # It returns bar coordinates in the format below.
@@ -15,7 +72,7 @@ def getBars(img):
     horizontalLines = getHorizontalLines(img)
     verticalLines, stemLines = getVerticalLines(img, horizontalLines)
     clefs = getClefs(img, horizontalLines)
-    
+
     # The format of a bar will be represented as an array of pixel coordinates in the format
     # [[(TCTopLeftY,TCTopLeftX),(TCBottomRightY,TCBottomRightX)],[(BCTopLeftY,BCTopLeftX),(BCBottomRightY,BCBottomRightX)]]
     # where TC reprents the treble clef upper half and BC represents the bass clef lower half.

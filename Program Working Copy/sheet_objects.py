@@ -1,5 +1,6 @@
 from skimage import io
 from skimage.color import rgb2gray
+from get_bars import getBars
 
 class MusicSheet:
     
@@ -12,9 +13,9 @@ class MusicSheet:
         image = rgb2gray(io.imread(path))
         self.image = image
         
-    def setBars(self, bars):
+    def createBars(self):
         
-        self.barObjects = bars
+        self.barObjects = getBars(self.image)
 
 
 class Bar:

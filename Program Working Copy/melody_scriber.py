@@ -1,4 +1,3 @@
-from get_bars import getBars
 from get_notes import getNotes, sortStems
 from get_whole_notes import getWholeNotes
 from create_midi import createMidi
@@ -15,17 +14,18 @@ sheet = MusicSheet()
 
 sheet.setImage('./test_images/test_image_1.png')
 
-# Create bar objects and update sheet
+# Create bar objects 
 
-sheet.setBars(getBars(sheet.image))
+sheet.createBars()
 
-# Create note objects and update sheet
 '''
+# Create note objects
+
 sortedStems = sortStems(bars, stemLines)
 wholeNotes = getWholeNotes(img, sortedStems, bars)
 notes = getNotes(img, bars, stemLines, notes = wholeNotes)
 
-# Create and output the midi using the sheet object
+# Create and output a midi file
 
 createMidi(notes, bars, horizontalLines)
 '''

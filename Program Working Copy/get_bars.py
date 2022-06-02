@@ -8,58 +8,134 @@ from skimage.metrics import mean_squared_error
 
 def getBars(img):
     
-    horizontalLines = getHorizontalLines(img)
-    verticalLines, stemLines = getVerticalLines(img, horizontalLines)
-    clefs = getClefs(img, horizontalLines)
+    # Takes in a grayscale image of sheet music. Computes and returns bar objects
+    # as formated in the module sheet_objects.py.
     
-    vertLineIndex = 0
-    buffer = 2 # set for how many pixels above and below the vert line to process horiz lines
-    horizStartIndex = 0
-    horizEndIndex = 0
-    numVertLines = len(verticalLines)-2
-    numHorizLines = len(horizontalLines)
+    # Get the components necessary to create a bar
     
-    # Go through the vertical lines sequentially
+    horizontalLines = getHorizontalLines(img) # An array of lines which are an array of pixel x,y coords
+    verticalLines, stemLines = getVerticalLines(img, horizontalLines) # An array of lines which are an array of pixel x,y coords
+    clefs = getClefs(img, horizontalLines) # An ordered array of staff clef signatures represented as 't' or 'b'
+    
+    # Set up the reference indices for each component 
+    
+    vertLineIndex = 0 # Reference to track what vert line we are processing
+    vertEndIndex = 0 # Reference to track how many vert lines correspond to a set of horiz lines
+    horizLineIndex = 0 # Reference to track what horiz line we are processing
+    horizEndIndex = 0 # Reference to track how many horiz lines correspond to a set of vert lines
+    clefIndex = 0 # Reference to track where we are in the clef signature list
+
+    # The following three variables are set static for now but may change as
+    # we improve the algorithm for more complicated cases.
+    
+    buffer = 5 # Set an extension buffer of vert line Y ranges in case horiz lines are off by a few pixels
+    numVertLines = len(verticalLines)-2 # Subtract two as the end-of-song vert line is counted extra times
+    numHorizLines = len(horizontalLines) # Reference of how many horizontal lines we have
+
+    bars = [] # The list to store the bar objects 
+    
+    # Begin the search sequentially through the set of vertical lines 
     
     while vertLineIndex < numVertLines:
         
-        line = verticalLines[vertLineIndex]
-        lineTop = line[0][0]-buffer
-        lineBottom = line[-1][0]+buffer
+        line = verticalLines[vertLineIndex] # The vertical line to test for intersecting horizontal lines
+        lineTop = line[0][0]-buffer # Extending the lower Y bounds of the line
+        lineBottom = line[-1][0]+buffer # Extending the upper Y bounds of the line
         
-        # Test to see how many horiz lines are attached to the vert line to 
-        # determine how many staffs are in the bar, whether it is complete, etc
+        # Iterate sequentially through the horizontal lines, using their first x,y
+        # coordinate as a reference to see if it falls within the bounds of the 
+        # vertical line. Update the ending horizontal index for tracking. 
         
         while (horizEndIndex < numHorizLines and lineBottom >= horizontalLines[horizEndIndex][0][0] >= lineTop):
             
             horizEndIndex += 1
         
-        # Test to see how many vertical lines are bound by the horizontal lines 
-        # we just found
+        # Determine how many staffs can be created from the horiz lines found
         
-        xEnd = horizontalLines[horizStartIndex][-1][1]
-        vertEndIndex = vertLineIndex
+        numStaffs = int((horizEndIndex - horizLineIndex)/5) # Sould be divisible by 5
+        
+        # Iterate sequentially through the vertical lines, using their first x,y
+        # coordinate as a reference. The x coord will be tested against the final
+        # x coord of a horizontal line belonging to the set, keeping track of 
+        # how many vertical lines there are before the x values roughly converge.
+        
+        xEnd = horizontalLines[horizLineIndex][-1][1] # The final x position of a horiz line belonging to the vert set
         
         while (xEnd - verticalLines[vertEndIndex][0][1] > 10) :
+            
             vertEndIndex += 1
         
-        # Process into bars based on the paired vert and horiz lines
+        # Add one to include the end line found
         
-        # Skip ahead through vertical lines that have already been processed
-        # to begin the search for a new line of bars.
+        vertEndIndex += 1
         
-        vertLinesToSkip = (vertEndIndex - vertLineIndex) + 1
-        horizStartIndex = horizEndIndex
-        vertLineIndex += vertLinesToSkip
+        # Debugging
+
+        print("Current vertical line: " + str(vertLineIndex))
+        print("Vertical Lines that belong to this set: " + str(vertEndIndex - vertLineIndex))
+        print("Horizontal start index: " + str(horizLineIndex))
+        print("Horizontal end index: " + str(horizEndIndex))
+        print("Number of staffs: " + str(numStaffs))
+        print("\n")
+        
+        # Create subsets or the verticle and horizontal lines to pass to the 
+        # bar creation function.
+        
+        vertLineSubset = verticalLines[vertLineIndex:vertEndIndex]
+        horizLineSubset = horizontalLines[horizLineIndex:horizEndIndex]
+        clefSubset = clefs[clefIndex:numStaffs+1]
+        
+        # Create the new bars for this iteration and append to the full set 
+        
+        newBars = createBars(vertLineSubset, horizLineSubset, clefSubset)
+        bars += newBars
+        
+        # Update the positions of the next lines to be searched
+        
+        clefIndex += numStaffs
+        horizLineIndex = horizEndIndex
+        vertLineIndex = vertEndIndex
+
+    return bars
+
+
+
+def createBars(verticalLines, horizontalLines, clefs):
     
-    # Expected values are either 5 or 10 horiz lines for now. Process based on that.
+    # Takes in a set of corresponding vertical lines, horizontal lines, and
+    # clefs. Creates and returns a list of bar objects made from these sets. 
     
-    # Get the rest of the vertical lines that belongs to the set of horz lines.
+    # Iterate through the vertical lines to create separate staffs and bars
     
-    # Process into individual bars. Skip ahead of the vertical lines processed 
-    # to begin the next set. 
+    vertIndex = 0
     
-    # Return the final objects
+    # Skip the algo at the last vertical line as it is a terminating line, not start of bar
+    
+    while vertIndex < (len(verticalLines) - 1):
+        
+        # Start at the top of the first vertical line and trace down. We want to 
+        # find where this line intersects the horizontal lines to define the starting 
+        # bounds of the bar. 
+        
+        startVertLine = verticalLines[vertIndex] # The starting vertical line of a bar
+        
+        for pixel in startVertLine:
+            
+            pass
+        
+        # Start at the top of the ending vertical line and trace down. We want to 
+        # find where this line intersects the horizontal lines to define the ending
+        # bounds of the bar. 
+        
+        endVertLine = verticalLines[vertIndex+1] # The ending vertical line of a bar
+        
+        for pixel in endVertLine:
+            
+            pass
+        
+        vertIndex += 1
+        
+    return []
 
 
 

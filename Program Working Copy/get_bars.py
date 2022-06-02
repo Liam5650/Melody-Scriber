@@ -2,6 +2,29 @@ from get_bar_components import getHorizontalLines, getVerticalLines, getClefs
 
 
 
+class Bar:
+      
+    def __init__(self, staffObjects, verticalLines, timeSig=(4,4)):
+        
+        self.timeSig = timeSig
+        self.staffObjects = staffObjects
+        self.vertLines = verticalLines
+        self.cornerCoords = [staffObjects[0].cornerCoords[0], staffObjects[-1].cornerCoords[1]]
+        
+class Staff:
+    
+    noteStems = []
+    noteObjects = []
+    
+    def __init__(self, clefSig, horizLines, keySig = ''):
+        
+        self.clefSig = clefSig
+        self.keySig = keySig
+        self.horizLines = horizLines
+        self.cornerCoords = [horizLines[0][0], horizLines[-1][-1]]
+
+
+
 def getBars(img):
     
     # Takes in a grayscale image of sheet music. Computes and returns bar objects
@@ -66,20 +89,23 @@ def getBars(img):
         vertEndIndex += 1
         
         # Debugging
-
+        
+        '''
         print("Current vertical line: " + str(vertLineIndex))
         print("Vertical Lines that belong to this set: " + str(vertEndIndex - vertLineIndex))
         print("Horizontal start index: " + str(horizLineIndex))
         print("Horizontal end index: " + str(horizEndIndex))
         print("Number of staffs: " + str(numStaffs))
+        print("\n")
+        '''
         
         # Create subsets or the verticle and horizontal lines to pass to the 
         # bar creation function.
         
         vertLineSubset = verticalLines[vertLineIndex:vertEndIndex]
         horizLineSubset = horizontalLines[horizLineIndex:horizEndIndex]
-        clefSubset = clefs[clefIndex:numStaffs+1]
-        
+        clefSubset = clefs[clefIndex:clefIndex+numStaffs]
+
         # Create the new bars for this iteration and append to the full set 
         
         newBars = createBars(vertLineSubset, horizLineSubset, clefSubset)
@@ -90,8 +116,6 @@ def getBars(img):
         clefIndex += numStaffs
         horizLineIndex = horizEndIndex
         vertLineIndex = vertEndIndex
-        
-        print("\n")
         
     return bars
 
@@ -104,57 +128,93 @@ def createBars(verticalLines, horizontalLines, clefs):
     # The assumption is that these have already been properly divided, and 
     # vertical and horizontal lines intersect as expected. 
     
-    # Iterate through the vertical lines to create separate staffs and bars
+    # Iterate through the horizontal lines to create separate staffs and bars
     
-    vertIndex = 0 # Reference where we are in the vertical lines
-    intersections = []
+    horizIndex = 0 # Reference where we are in the horizontal lines
+    lineSegments = [] # A list to store the horizontal line segments found
     
-    while vertIndex < len(verticalLines):
+    while horizIndex < len(horizontalLines):
         
-        # Start at the top of the vertical line and trace down. We want to 
-        # find where this line intersects the horizontal lines. The intersection
-        # point is stored for processing.
+        # Start at the left side of the horizontal line and trace right, keeping 
+        # track of traversed pixels. When we find an intersection point with a 
+        # vertical line, we save the traversed line segment to be stored in a bar 
+        # later. 
         
-        vertLine = verticalLines[vertIndex] # The starting vertical line of a bar
-        horizIndex = 0 # Reference where we are in the horizontal lines
-        currLineIntersections = [] # the pixel coords of intersection points found
-    
-        for pixel in vertLine:
+        horizLine = horizontalLines[horizIndex] # The starting horizontal line of a bar
+        vertIndex = 1 # Reference where we are in the vertical lines. Skip the first line as it doesnt make a segment on its own
+        currLineSegments = [] # the pixel coords of intersection points found for the current horizontal line
+        numVertLines = len(verticalLines) # Used to make sure we do not check an invalid index
+        pixelsTraversed = [] # A list of pixels we have traversed in the current segment
+        
+        for pixel in horizLine:
             
-            if pixel in horizontalLines[horizIndex]:
+            if vertIndex < numVertLines and pixel in verticalLines[vertIndex]:
                 
-                currLineIntersections.append(pixel)
-                horizIndex += 1
+                currLineSegments.append(pixelsTraversed)
+                pixelsTraversed = []
+                vertIndex += 1
+                
+            else:
+                
+                pixelsTraversed.append(pixel)
+                
+        # Append horizontal line traversal results to the main list and continue
         
-        intersections.append(currLineIntersections)
-        vertIndex += 1
-    
-    # Reorganize or organization based on the Y value instead of the X 
-    # for easier segment traversal across the x axis
-    
-    numHorizLines = len(horizontalLines)
-    horizOrderedIntersections = []
-    
-    # Create a list of lists where each sub list index represents a horizontal line
-    # and its respective intersection points with the vertical lines
-    
-    for i in range(numHorizLines):
+        lineSegments.append(currLineSegments)
+        horizIndex += 1
         
-        horizOrderedIntersections.append([])
+    # Reorganize the segments so they are separated by bar
     
-    for lineIntersection in intersections:
+    # Handle the horizontal lines, ie 10 segments per bar
+    
+    numBars = len(verticalLines)-1
+    organizedHorizSegments = []
+    
+    for i in range(numBars):
         
-        i = 0
+        organizedHorizSegments.append([])
+    
+    i = 0
+    
+    for horizLineSet in lineSegments:
         
-        for pixel in lineIntersection:
+        for segment in horizLineSet:
             
-            horizOrderedIntersections[i].append(pixel)
-            i += 1
+            organizedHorizSegments[i].append(segment)
+            
+            if i == numBars-1:
+                
+                i = 0
+                
+            else:
+                
+                i += 1
     
-    print(horizOrderedIntersections)
+    # Handle the verticle lines, ie two segments per bar
     
-    # Begin traversal across each horizontal line
+    organizedVertSegments = []
     
+    for i in range(numBars):
+        
+        organizedVertSegments.append([verticalLines[i], verticalLines[i+1]])
+
+    # Create the bars from the segments
     
+    bars = []
     
-    return []
+    for i in range(numBars):
+        
+        # Create the separate staff objects of the bar
+        staffs = []
+        
+        for j in range(len(clefs)):
+            
+            staffClefSig = clefs[j]
+            staffHorizLines = organizedHorizSegments[i][j*5:5+(j*5)]
+            staff = Staff(staffClefSig, staffHorizLines)
+            staffs.append(staff)
+            
+        bar = Bar(staffs, organizedVertSegments[i])
+        bars.append(bar)
+            
+    return bars

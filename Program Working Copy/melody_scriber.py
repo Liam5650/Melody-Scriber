@@ -18,6 +18,11 @@ sheet.setImage('./test_images/test_image_1.png')
 
 sheet.createBars()
 
+bars = sheet.barObjects
+
+for bar in bars:
+    print(bar.cornerCoords)
+
 '''
 # Create note objects
 

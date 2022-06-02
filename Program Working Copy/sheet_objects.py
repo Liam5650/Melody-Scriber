@@ -16,27 +16,7 @@ class MusicSheet:
     def createBars(self):
         
         self.barObjects = getBars(self.image)
-
-
-class Bar:
-    
-    stafObjects = []
-    cornerCoords = []
-    
-    def __init__(self, timeSig=(4,4)):
-        
-        self.timeSig = timeSig
-        
-class Staff:
-    
-    clefSig = ''
-    keySig = ''
-    cornerCoords = []
-    horizLines = []
-    vertLines = []
-    noteStems = []
-    noteObjects = []
-    
+   
 class Chord:
     
     noteObjects = []

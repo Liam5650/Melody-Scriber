@@ -1,14 +1,14 @@
 from get_notes import getNotes, sortStems
 from get_whole_notes import getWholeNotes
 from create_midi import createMidi
-from sheet_objects import MusicSheet
+import sheet_objects
 from timeit import default_timer as timer
 
 start = timer()
 
 # Create music sheet object
 
-sheet = MusicSheet()
+sheet = sheet_objects.MusicSheet()
 
 # Set the image path
 

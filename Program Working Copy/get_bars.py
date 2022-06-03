@@ -1,27 +1,5 @@
 from get_bar_components import getHorizontalLines, getVerticalLines, getClefs
-
-
-
-class Bar:
-      
-    def __init__(self, staffObjects, verticalLines, timeSig=(4,4)):
-        
-        self.timeSig = timeSig
-        self.staffObjects = staffObjects
-        self.vertLines = verticalLines
-        self.cornerCoords = [staffObjects[0].cornerCoords[0], staffObjects[-1].cornerCoords[1]]
-        
-class Staff:
-    
-    noteStems = []
-    noteObjects = []
-    
-    def __init__(self, clefSig, horizLines, keySig = ''):
-        
-        self.clefSig = clefSig
-        self.keySig = keySig
-        self.horizLines = horizLines
-        self.cornerCoords = [horizLines[0][0], horizLines[-1][-1]]
+import sheet_objects
 
 
 
@@ -211,10 +189,10 @@ def createBars(verticalLines, horizontalLines, clefs):
             
             staffClefSig = clefs[j]
             staffHorizLines = organizedHorizSegments[i][j*5:5+(j*5)]
-            staff = Staff(staffClefSig, staffHorizLines)
+            staff = sheet_objects.Staff(staffClefSig, staffHorizLines)
             staffs.append(staff)
             
-        bar = Bar(staffs, organizedVertSegments[i])
+        bar = sheet_objects.Bar(staffs, organizedVertSegments[i])
         bars.append(bar)
             
     return bars
